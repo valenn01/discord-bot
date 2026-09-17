@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 350" width="700" height="350">
+  <defs>
+    <!-- Fondo Gradiente Principal -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a12" />
+      <stop offset="50%" stop-color="#120e24" />
+      <stop offset="100%" stop-color="#06060a" />
+    </linearGradient>
+
+    <!-- Resplandor central para el avatar -->
+    <radialGradient id="centerGlow" cx="50%" cy="28%" r="45%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#3b82f6" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Resplandor esquina inferior derecha -->
+    <radialGradient id="bottomGlow" cx="90%" cy="90%" r="40%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Patrón de puntos/cuadrícula tenue -->
+    <pattern id="dotGrid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#ffffff" fill-opacity="0.04" />
+    </pattern>
+  </defs>
+
+  <!-- Rectángulo base redondeado -->
+  <rect width="700" height="350" rx="18" fill="url(#bgGrad)" />
+
+  <!-- Patrón de puntos -->
+  <rect width="700" height="350" rx="18" fill="url(#dotGrid)" />
+
+  <!-- Luces / Glows -->
+  <rect width="700" height="350" rx="18" fill="url(#centerGlow)" />
+  <rect width="700" height="350" rx="18" fill="url(#bottomGlow)" />
+
+  <!-- Líneas geométricas decorativas minimalistas -->
+  <line x1="0" y1="230" x2="220" y2="230" stroke="#8b5cf6" stroke-opacity="0.2" stroke-width="1" />
+  <circle cx="220" cy="230" r="2.5" fill="#8b5cf6" fill-opacity="0.4" />
+
+  <line x1="480" y1="230" x2="700" y2="230" stroke="#8b5cf6" stroke-opacity="0.2" stroke-width="1" />
+  <circle cx="480" cy="230" r="2.5" fill="#8b5cf6" fill-opacity="0.4" />
+
+  <!-- Acentos en esquinas -->
+  <path d="M 25 15 L 15 15 L 15 25" stroke="#a78bfa" stroke-opacity="0.3" stroke-width="1.5" fill="none" />
+  <path d="M 675 15 L 685 15 L 685 25" stroke="#a78bfa" stroke-opacity="0.3" stroke-width="1.5" fill="none" />
+  <path d="M 25 335 L 15 335 L 15 325" stroke="#a78bfa" stroke-opacity="0.3" stroke-width="1.5" fill="none" />
+  <path d="M 675 335 L 685 335 L 685 325" stroke="#a78bfa" stroke-opacity="0.3" stroke-width="1.5" fill="none" />
+
+  <!-- Borde exterior sutil -->
+  <rect x="1" y="1" width="698" height="348" rx="17" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1.5" />
+</svg>
