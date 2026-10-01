@@ -1,3 +1,9 @@
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => res.send('Bot online!'));
+app.listen(PORT, () => console.log(`Servidor HTTP activo en puerto ${PORT}`));
 const fs = require('fs');
 const path = require('path');
 const { Client,Collection, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
