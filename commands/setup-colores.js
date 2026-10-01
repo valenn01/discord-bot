@@ -47,7 +47,7 @@ module.exports = {
         let channel = guild.channels.cache.find(c => c.name === '🎨・roles-color');
         if (!channel) {
             channel = await guild.channels.create({
-                name: '🎨・roles-color',
+                name: '🎨︙auto-rol',
                 type: ChannelType.GuildText,
                 topic: 'Elegí el color para tu nombre'
             });

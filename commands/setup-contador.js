@@ -22,11 +22,18 @@ module.exports = {
             });
         }
 
-        try {
-            const totalMembers = guild.memberCount;
+try {
+            // Traer todos los miembros del servidor para no tener datos viejos de caché
+            await guild.members.fetch();
+
+            // Filtrar y contar solo humanos (sin bots):
+            const totalMembers = guild.members.cache.filter(m => !m.user.bot).size;
+
+            // Si querés que cuente TODOS (humanos + bots), usá:
+            // const totalMembers = guild.memberCount;
 
             const channel = await guild.channels.create({
-                name: `👥・Miembros: ${totalMembers}`,
+                name: `👥︙Miembros: ${totalMembers}`,
                 type: ChannelType.GuildVoice,
                 permissionOverwrites: [
                     {

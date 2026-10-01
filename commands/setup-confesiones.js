@@ -13,7 +13,7 @@ module.exports = {
         let channel = guild.channels.cache.find(c => c.name === '🤫・confesiones');
         if (!channel) {
             channel = await guild.channels.create({
-                name: '🤫・confesiones',
+                name: '🤫︙confesiones',
                 type: ChannelType.GuildText,
                 topic: 'Canal de confesiones anónimas. Usá /confesar para enviar la tuya.'
             });

@@ -1,9 +1,16 @@
 const fs = require('fs');
 const path = require('path');
-const { Client, Collection } = require('discord.js');
+const { Client,Collection, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
 
-const client = new Client({ intents: 53608447 });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers, // <--- Este es fundamental
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
+});
 
 client.commands = new Collection();
 client.sugerenciasVotos = new Map();
@@ -36,3 +43,11 @@ for (const file of eventFiles) {
 }
 
 client.login(process.env.DISCORD_TOKEN);
+
+process.on('unhandledRejection', error => {
+    console.error('Error no controlado evitado:', error);
+});
+
+process.on('uncaughtException', error => {
+    console.error('Excepción capturada:', error);
+});
