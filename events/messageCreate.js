@@ -24,7 +24,7 @@ module.exports = {
 
         const userId = message.author.id;
         const ahora = Date.now();
-        const cooldown = 3 * 1000; // 1 minuto de cooldown anti-spam
+        const cooldown = 3 * 1000;
 
         let user = db.prepare('SELECT * FROM niveles WHERE userId = ?').get(userId);
 
