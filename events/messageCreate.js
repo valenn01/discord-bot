@@ -24,7 +24,7 @@ module.exports = {
 
         const userId = message.author.id;
         const ahora = Date.now();
-        const cooldown = 60 * 1000; // 1 minuto de cooldown anti-spam
+        const cooldown = 3 * 1000; // 1 minuto de cooldown anti-spam
 
         let user = db.prepare('SELECT * FROM niveles WHERE userId = ?').get(userId);
 
@@ -58,17 +58,27 @@ module.exports = {
 
         if (!subioDeNivel) return;
 
-        // 2. Asignar rol si alcanzó un hito
+// 2. Asignar rol si alcanzó un hito y remover los anteriores
         let rolAgregadoTexto = '';
         if (ROLES_HITOS.includes(nivelActual)) {
             const nombreRol = `Nivel ${nivelActual}`;
             const rol = message.guild.roles.cache.find(r => r.name === nombreRol);
+
             if (rol && !message.member.roles.cache.has(rol.id)) {
+                // Roles viejos a remover (todos los hitos anteriores que el usuario tenga)
+                const rolesViejos = message.guild.roles.cache.filter(r => 
+                    ROLES_HITOS.some(h => `Nivel ${h}` === r.name && h !== nivelActual) &&
+                    message.member.roles.cache.has(r.id)
+                );
+
+                if (rolesViejos.size > 0) {
+                    await message.member.roles.remove(rolesViejos).catch(console.error);
+                }
+
                 await message.member.roles.add(rol).catch(console.error);
                 rolAgregadoTexto = `\n🎖️ ¡Desbloqueaste el rol **${nombreRol}**!`;
             }
         }
-
         // 3. Notificación en canal exclusivo o actual
         const canalAvisoId = process.env.CANAL_NOTIFICACION_LEVEL;
         const canalAviso = canalAvisoId 
