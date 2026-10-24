@@ -3,37 +3,37 @@ const {
     PermissionFlagsBits, 
     ChannelType 
 } = require('discord.js');
+const db = require('../database.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setup-contador')
-        .setDescription('Crea y configura automáticamente el canal de contador de miembros')
+        .setDescription('Crea y configura el canal de contador de miembros')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-    async execute(interaction, client) {
+    async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
 
         const guild = interaction.guild;
 
-        // Verificar si ya existe en memoria o en el servidor
-        if (client.memberCountChannelId && guild.channels.cache.has(client.memberCountChannelId)) {
-            return interaction.editReply({ 
-                content: `El contador ya está configurado en el canal <#${client.memberCountChannelId}>.` 
-            });
-        }
+        try {
+            // Verificar si ya existe en la base de datos
+            const res = await db.query("SELECT valor FROM config WHERE clave = 'canal_contador'");
+            const existingChannelId = res.rows[0]?.valor;
 
-try {
-            // Traer todos los miembros del servidor para no tener datos viejos de caché
+            if (existingChannelId && guild.channels.cache.has(existingChannelId)) {
+                return interaction.editReply({ 
+                    content: `El contador ya está configurado en <#${existingChannelId}>.` 
+                });
+            }
+
             await guild.members.fetch();
 
-            // Filtrar y contar solo humanos (sin bots):
-            const totalMembers = guild.members.cache.filter(m => !m.user.bot).size;
-
-            // Si querés que cuente TODOS (humanos + bots), usá:
-            // const totalMembers = guild.memberCount;
+            // Total de humanos en el server
+            const memberCount = guild.members.cache.filter(m => !m.user.bot).size;
 
             const channel = await guild.channels.create({
-                name: `👥︙Miembros: ${totalMembers}`,
+                name: `👥│Miembros: ${memberCount}`,
                 type: ChannelType.GuildVoice,
                 permissionOverwrites: [
                     {
@@ -43,13 +43,18 @@ try {
                 ]
             });
 
-            client.memberCountChannelId = channel.id;
+            // Guardar en config
+            await db.query(
+                `INSERT INTO config (clave, valor) VALUES ('canal_contador', $1)
+                 ON CONFLICT (clave) DO UPDATE SET valor = $1`,
+                [channel.id]
+            );
 
             await interaction.editReply({ 
-                content: `Canal de contador creado correctamente: ${channel}` 
+                content: `Canal creado y registrado en la base de datos: ${channel} (${memberCount} miembros).` 
             });
         } catch (error) {
-            console.error(error);
+            console.error('Error al configurar canal contador:', error);
             await interaction.editReply({ 
                 content: 'Hubo un error al crear el canal. Verificá los permisos del bot.' 
             });

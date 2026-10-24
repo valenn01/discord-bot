@@ -5,6 +5,7 @@ const {
     TextInputStyle, 
     ActionRowBuilder 
 } = require('discord.js');
+const db = require('../database.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -12,6 +13,18 @@ module.exports = {
         .setDescription('Envía una confesión 100% anónima'),
 
     async execute(interaction) {
+        // Validar si el canal está configurado en config
+        const res = await db.query("SELECT valor FROM config WHERE clave = 'canal_confesiones'");
+        const canalId = res.rows[0]?.valor;
+        const canal = canalId ? interaction.guild.channels.cache.get(canalId) : null;
+
+        if (!canal) {
+            return interaction.reply({
+                content: 'El sistema de confesiones está deshabilitado en este servidor (falta configurarlo con `/setup-confesiones`).',
+                flags: ['Ephemeral']
+            });
+        }
+
         const modal = new ModalBuilder()
             .setCustomId('modal_confesion')
             .setTitle('Nueva Confesión Anónima');

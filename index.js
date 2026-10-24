@@ -1,26 +1,27 @@
-const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => res.send('Bot online!'));
-app.listen(PORT, () => console.log(`Servidor HTTP activo en puerto ${PORT}`));
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { Client,Collection, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-require('dotenv').config();
+const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js');
 
+// Cliente Discord
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers, // <--- Este es fundamental
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessageReactions
+    ],
+    partials: [
+        Partials.Message, 
+        Partials.Channel, 
+        Partials.Reaction
     ]
 });
 
 client.commands = new Collection();
 client.sugerenciasVotos = new Map();
-client.numeroConfesion = 1; // <-- ACÁ AGREGÁS EL CONTADOR
+client.numeroConfesion = 1;
 
 // Cargar Comandos
 const commandsPath = path.join(__dirname, 'commands');
@@ -48,8 +49,7 @@ for (const file of eventFiles) {
     }
 }
 
-client.login(process.env.DISCORD_TOKEN);
-
+// Manejo de errores globales
 process.on('unhandledRejection', error => {
     console.error('Error no controlado evitado:', error);
 });
@@ -57,3 +57,5 @@ process.on('unhandledRejection', error => {
 process.on('uncaughtException', error => {
     console.error('Excepción capturada:', error);
 });
+
+client.login(process.env.DISCORD_TOKEN);

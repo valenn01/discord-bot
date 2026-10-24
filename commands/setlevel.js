@@ -11,16 +11,28 @@ module.exports = {
         .addIntegerOption(opt => opt.setName('xp').setDescription('XP actual').setRequired(false)),
 
     async execute(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const target = interaction.options.getUser('usuario');
         const nivel = interaction.options.getInteger('nivel');
         const xp = interaction.options.getInteger('xp') || 0;
 
-        db.prepare(`
-            INSERT INTO niveles (userId, xp, nivel, ultimoMensaje) 
-            VALUES (?, ?, ?, 0) 
-            ON CONFLICT(userId) DO UPDATE SET nivel = ?, xp = ?, ultimoMensaje = 0
-        `).run(target.id, xp, nivel, nivel, xp);
+        try {
+            await db.query(`
+                INSERT INTO niveles ("userId", xp, nivel, "ultimoMensaje") 
+                VALUES ($1, $2, $3, 0) 
+                ON CONFLICT ("userId") DO UPDATE 
+                SET nivel = $3, xp = $2, "ultimoMensaje" = 0
+            `, [target.id, xp, nivel]);
 
-        await interaction.reply({ content: `Listo: ${target.username} quedó en Nivel **${nivel}** con **${xp} XP**.`, ephemeral: true });
+            await interaction.editReply({ 
+                content: `Listo: ${target.username} quedó en Nivel **${nivel}** con **${xp} XP**.` 
+            });
+        } catch (error) {
+            console.error('Error en setlevel:', error);
+            await interaction.editReply({ 
+                content: 'Hubo un error al actualizar el nivel en la base de datos.' 
+            });
+        }
     }
 };

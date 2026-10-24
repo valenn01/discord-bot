@@ -11,12 +11,20 @@ const {
     EmbedBuilder 
 } = require('discord.js');
 const NOMBRES_COLORES = new Set([
-    'Rojo Carmesí', 
-    'Azul Eléctrico', 
-    'Verde Esmeralda', 
-    'Violeta Neón', 
-    'Amarillo Dorado', 
-    'Rosa Pastel'
+  'Rojo Carmesí',
+  'Naranja Fuego',
+  'Amarillo Dorado',
+  'Verde Esmeralda',
+  'Menta / Aqua',
+  'Cian Glaciar',
+  'Azul Eléctrico',
+  'Azul Noche',
+  'Violeta Neón',
+  'Lavanda',
+  'Rosa Pastel',
+  'Magenta / Fucsia',
+  'Blanco Nieve',
+  'Gris Grafito'
 ]);
 module.exports = {
     name: Events.InteractionCreate,
@@ -42,25 +50,6 @@ module.exports = {
 
 // 2. BOTONES
         if (interaction.isButton()) {
-            // VERIFICACIÓN
-            if (interaction.customId === 'btn_verificar') {
-                await interaction.deferReply({ flags: ['Ephemeral'] });
-
-                const rolId = process.env.ROL_VERIFICADO;
-                const rol = interaction.guild.roles.cache.get(rolId);
-
-                if (!rol) {
-                    return interaction.editReply({ content: 'Error: No se encontró el rol de verificación configurado.' });
-                }
-
-                if (interaction.member.roles.cache.has(rolId)) {
-                    return interaction.editReply({ content: 'Ya estás verificado en el servidor.' });
-                }
-
-                await interaction.member.roles.add(rol);
-                return interaction.editReply({ content: '✅ ¡Te verificaste correctamente! Ya tenés acceso al servidor.' });
-            }
-
             // CREAR TICKET
             if (interaction.customId === 'btn_crear_ticket') {
                 const guild = interaction.guild;
@@ -121,48 +110,96 @@ module.exports = {
                 }, 5000);
                 return;
             }
-            // --- BOTONES DE SUGERENCIAS CON SQLITE ---
-            if (interaction.customId === 'sug_upvote' || interaction.customId === 'sug_downvote') {
+
+
+
+            // --- BOTONES DE SUGERENCIA (SUPABASE) ---
+            if (interaction.customId === 'sug_reply') {
+                if (!interaction.memberPermissions.has(PermissionFlagsBits.Administrator)) {
+                    return interaction.reply({ content: 'Solo administradores pueden responder sugerencias.', flags: ['Ephemeral'] });
+                }
+
+                const modal = new ModalBuilder()
+                    .setCustomId(`sug_modal_${interaction.message.id}`)
+                    .setTitle('Responder Sugerencia');
+
+                const inputRespuesta = new TextInputBuilder()
+                    .setCustomId('respuesta_admin')
+                    .setLabel('Respuesta oficial')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setPlaceholder('Escribí acá la respuesta del staff...')
+                    .setRequired(true);
+
+                modal.addComponents(new ActionRowBuilder().addComponents(inputRespuesta));
+                return await interaction.showModal(modal);
+            }
+
+            if (interaction.customId === 'sug_up' || interaction.customId === 'sug_down') {
                 await interaction.deferReply({ flags: ['Ephemeral'] });
 
                 const messageId = interaction.message.id;
                 const userId = interaction.user.id;
-                const tipoVoto = interaction.customId === 'sug_upvote' ? 'up' : 'down';
+                const tipoVoto = interaction.customId === 'sug_up' ? 'up' : 'down';
 
-                const votoActual = db.prepare('SELECT tipo FROM sugerencias_votos WHERE mensajeId = ? AND userId = ?').get(messageId, userId);
-                let mensajeTexto = '';
+                try {
+                    const votoActualRes = await db.query(
+                        'SELECT tipo FROM sugerencias_votos WHERE "mensajeId" = $1 AND "userId" = $2',
+                        [messageId, userId]
+                    );
+                    const votoActual = votoActualRes.rows[0];
+                    let mensajeTexto = '';
 
-                if (votoActual) {
-                    if (votoActual.tipo === tipoVoto) {
-                        db.prepare('DELETE FROM sugerencias_votos WHERE mensajeId = ? AND userId = ?').run(messageId, userId);
-                        mensajeTexto = tipoVoto === 'up' ? 'Removiste tu voto positivo 👍' : 'Removiste tu voto negativo 👎';
+                    if (votoActual) {
+                        if (votoActual.tipo === tipoVoto) {
+                            await db.query(
+                                'DELETE FROM sugerencias_votos WHERE "mensajeId" = $1 AND "userId" = $2',
+                                [messageId, userId]
+                            );
+                            mensajeTexto = tipoVoto === 'up' ? 'Removiste tu voto positivo 👍' : 'Removiste tu voto negativo 👎';
+                        } else {
+                            await db.query(
+                                'UPDATE sugerencias_votos SET tipo = $1 WHERE "mensajeId" = $2 AND "userId" = $3',
+                                [tipoVoto, messageId, userId]
+                            );
+                            mensajeTexto = tipoVoto === 'up' ? 'Cambiaste a voto positivo 👍' : 'Cambiaste a voto negativo 👎';
+                        }
                     } else {
-                        db.prepare('UPDATE sugerencias_votos SET tipo = ? WHERE mensajeId = ? AND userId = ?').run(tipoVoto, messageId, userId);
-                        mensajeTexto = tipoVoto === 'up' ? 'Cambiaste a voto positivo 👍' : 'Cambiaste a voto negativo 👎';
+                        await db.query(
+                            'INSERT INTO sugerencias_votos ("mensajeId", "userId", tipo) VALUES ($1, $2, $3)',
+                            [messageId, userId, tipoVoto]
+                        );
+                        mensajeTexto = tipoVoto === 'up' ? 'Votaste a favor 👍' : 'Votaste en contra 👎';
                     }
-                } else {
-                    db.prepare('INSERT INTO sugerencias_votos (mensajeId, userId, tipo) VALUES (?, ?, ?)').run(messageId, userId, tipoVoto);
-                    mensajeTexto = tipoVoto === 'up' ? 'Votaste a favor 👍' : 'Votaste en contra 👎';
+
+                    const upCountRes = await db.query(
+                        'SELECT COUNT(*) AS total FROM sugerencias_votos WHERE "mensajeId" = $1 AND tipo = $2',
+                        [messageId, 'up']
+                    );
+                    const downCountRes = await db.query(
+                        'SELECT COUNT(*) AS total FROM sugerencias_votos WHERE "mensajeId" = $1 AND tipo = $2',
+                        [messageId, 'down']
+                    );
+
+                    const upCount = upCountRes.rows[0].total;
+                    const downCount = downCountRes.rows[0].total;
+
+                    // Actualizar el embed con los nuevos contadores de votos
+                    const oldEmbed = interaction.message.embeds[0];
+                    const partes = oldEmbed.description.split('**Votos**');
+                    const contenidoOriginal = partes[0].trim();
+                    const resto = partes[1] && partes[1].includes('**Respondido por') ? partes[1].split('**Respondido por')[1] : null;
+
+                    let nuevaDesc = `${contenidoOriginal}\n\n**Votos**\nVotos a favor: **${upCount}**\nVotos en contra: **${downCount}**`;
+                    if (resto) nuevaDesc += `\n\n**Respondido por${resto}`;
+
+                    const nuevoEmbed = EmbedBuilder.from(oldEmbed).setDescription(nuevaDesc);
+                    await interaction.message.edit({ embeds: [nuevoEmbed] });
+
+                    return interaction.editReply({ content: mensajeTexto });
+                } catch (err) {
+                    console.error('Error procesando voto:', err);
+                    return interaction.editReply({ content: 'Hubo un error al procesar el voto.' });
                 }
-
-                const upCount = db.prepare("SELECT COUNT(*) AS total FROM sugerencias_votos WHERE mensajeId = ? AND tipo = 'up'").get(messageId).total;
-                const downCount = db.prepare("SELECT COUNT(*) AS total FROM sugerencias_votos WHERE mensajeId = ? AND tipo = 'down'").get(messageId).total;
-
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId('sug_upvote')
-                        .setLabel(`${upCount}`)
-                        .setEmoji('👍')
-                        .setStyle(ButtonStyle.Success),
-                    new ButtonBuilder()
-                        .setCustomId('sug_downvote')
-                        .setLabel(`${downCount}`)
-                        .setEmoji('👎')
-                        .setStyle(ButtonStyle.Danger)
-                );
-
-                await interaction.message.edit({ components: [row] });
-                return interaction.editReply({ content: mensajeTexto });
             }
 
             // --- BOTONES DE CONFESIONES (ABRIR MODAL) ---
@@ -251,23 +288,66 @@ module.exports = {
 // 4. ENVÍO DE MODALES
         if (interaction.isModalSubmit()) {
             
+            // Modal de respuesta de sugerencias (Admin)
+            if (interaction.customId.startsWith('sug_modal_')) {
+                await interaction.deferReply({ flags: ['Ephemeral'] });
+
+                const messageId = interaction.customId.replace('sug_modal_', '');
+                const respuestaAdmin = interaction.fields.getTextInputValue('respuesta_admin');
+
+                try {
+                    const message = await interaction.channel.messages.fetch(messageId);
+                    const oldEmbed = message.embeds[0];
+
+                    const fecha = new Date().toLocaleDateString('es-AR', {
+                        day: 'numeric',
+                        month: 'numeric',
+                        year: '2-digit'
+                    });
+
+                    let descBase = oldEmbed.description;
+                    if (descBase.includes('\n\n**Respondido por')) {
+                        descBase = descBase.split('\n\n**Respondido por')[0];
+                    }
+
+                    const nuevaDesc = `${descBase}\n\n**Respondido por ${interaction.user.username}**\n${respuestaAdmin}`;
+
+                    const nuevoEmbed = EmbedBuilder.from(oldEmbed)
+                        .setTitle(`Sugerencia respondida el ${fecha}`)
+                        .setDescription(nuevaDesc);
+
+                    await message.edit({ embeds: [nuevoEmbed] });
+                    return interaction.editReply({ content: 'Sugerencia respondida con éxito.' });
+                } catch (error) {
+                    console.error('Error al responder sugerencia:', error);
+                    return interaction.editReply({ content: 'No se pudo editar el mensaje de la sugerencia.' });
+                }
+            }
+
             // Enviar Confesión inicial (sin crear hilo de una)
             if (interaction.customId === 'modal_confesion') {
                 await interaction.deferReply({ flags: ['Ephemeral'] });
 
                 const texto = interaction.fields.getTextInputValue('texto_confesion');
-                const canalId = client.confesionesChannelId || process.env.CONFESIONES_CHANNEL_ID || interaction.guild.channels.cache.find(c => c.name === '🤫・confesiones')?.id;
 
-                const canal = interaction.guild.channels.cache.get(canalId);
+                // Obtener canal desde la tabla config
+                const resChan = await db.query("SELECT valor FROM config WHERE clave = 'canal_confesiones'");
+                const canalId = resChan.rows[0]?.valor;
+                const canal = canalId ? interaction.guild.channels.cache.get(canalId) : null;
+
                 if (!canal) {
-                    return interaction.editReply({ content: 'No se encontró el canal de confesiones.' });
+                    return interaction.editReply({ content: 'No se encontró el canal de confesiones configurado.' });
                 }
 
-                // Contador persistente en DB
-                let rowConf = db.prepare("SELECT valor FROM config WHERE clave = 'numero_confesion'").get();
-                let num = rowConf ? parseInt(rowConf.valor, 10) : 1;
+                // Contador persistente en DB (Supabase/PostgreSQL)
+                let rowConf = await db.query("SELECT valor FROM config WHERE clave = 'numero_confesion'");
+                let num = rowConf.rows.length > 0 ? parseInt(rowConf.rows[0].valor, 10) : 1;
 
-                db.prepare("INSERT OR REPLACE INTO config (clave, valor) VALUES ('numero_confesion', ?)").run(String(num + 1));
+                await db.query(`
+                    INSERT INTO config (clave, valor) 
+                    VALUES ('numero_confesion', $1) 
+                    ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor
+                `, [String(num + 1)]);
 
                 const embed = new EmbedBuilder()
                     .setColor(0x9b59b6)

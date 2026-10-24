@@ -11,6 +11,7 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        await interaction.deferReply();
         const user = interaction.options.getUser('usuario') || interaction.user;
         const avatarUrl = user.displayAvatarURL({ dynamic: true, size: 1024 });
 
@@ -27,6 +28,6 @@ module.exports = {
                 .setURL(avatarUrl)
         );
 
-        await interaction.reply({ embeds: [embed], components: [row] });
+        await interaction.editReply({ embeds: [embed], components: [row] });
     }
 };
