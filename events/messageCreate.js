@@ -18,6 +18,28 @@ module.exports = {
     async execute(message) {
         if (message.author.bot || !message.guild) return;
 
+        // Si mencionan únicamente al bot (o con espacios)
+        const mencionBot = new RegExp(`^<@!?${message.client.user.id}>$`);
+
+        if (mencionBot.test(message.content.trim())) {
+            const embed = new EmbedBuilder()
+            .setColor(0x5865F2)
+            .setAuthor({ 
+            name: message.client.user.username, 
+            iconURL: message.client.user.displayAvatarURL() 
+        })
+            .setThumbnail(message.client.user.displayAvatarURL({ dynamic: true }))
+            .setDescription(
+              `¡Hola ${message.author}! Soy el bot del servidor.\n\n` +
+               `• Usá **/** para ver y ejecutar todos mis comandos slash.\n` +
+              `• Probá comandos como \`/rank\`, \`/sugerir\` o \`/colores\`.\n` +
+              `• Si necesitás soporte o encontraste un bug, avisale al staff.`
+        )
+        .setFooter({ text: 'Sistema del Servidor' })
+        .setTimestamp();
+
+            return message.reply({ embeds: [embed] }).catch(console.error);
+        }
         // ==========================================
         // 0. AUTO-REACCIONES EN MEMES Y MEDIA
         // ==========================================
@@ -158,9 +180,12 @@ module.exports = {
                     .setDescription(`🎉 ¡Felicidades ${message.author}! Subiste al **Nivel ${nivelActual}**${rolAgregadoTexto}`)
                     .setTimestamp();
 
-                await canalAviso.send({ embeds: [embed] })
-                    .then(() => console.log('Mensaje de nivel enviado a:', canalAviso.name))
-                    .catch(err => console.error('Error al enviar el embed:', err.message));
+                await canalAviso.send({ 
+                    content: `${message.author}`, 
+                    embeds: [embed] 
+                })
+                .then(() => console.log('Mensaje de nivel enviado a:', canalAviso.name))
+                .catch(err => console.error('Error al enviar el embed:', err.message));
             }
         } catch (err) {
             console.error('Error en sistema de niveles:', err);
