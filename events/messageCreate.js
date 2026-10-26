@@ -175,13 +175,29 @@ module.exports = {
             }
 
             if (canalAviso) {
+                const nombreUsuario = message.member?.displayName || message.author.displayName || message.author.username;
+                const avatarUsuario = message.author.displayAvatarURL({ extension: 'png', forceStatic: false, size: 256 });
+
+                // Formato: DD/MM/AAAA, HH:MM
+                const ahora = new Date();
+                const fechaFormateada = ahora.toLocaleString('es-AR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
                 const embed = new EmbedBuilder()
                     .setColor(0xf1c40f)
-                    .setDescription(`🎉 ¡Felicidades ${message.author}! Subiste al **Nivel ${nivelActual}**${rolAgregadoTexto}`)
-                    .setTimestamp();
+                    .setTitle('Subiste de Nivel')
+                    .setDescription(`**${nombreUsuario}** alcanzó el **Nivel ${nivelActual}**${rolAgregadoTexto ? `\n${rolAgregadoTexto}` : ''}`)
+                    .setThumbnail(avatarUsuario)
+                    .setFooter({ text: `${message.client.user.username} Levels • ${fechaFormateada}` });
 
                 await canalAviso.send({ 
-                    content: `${message.author}`, 
+                    content: `🎉 ¡Felicidades ${message.author}!`, 
                     embeds: [embed] 
                 })
                 .then(() => console.log('Mensaje de nivel enviado a:', canalAviso.name))
